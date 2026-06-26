@@ -9,6 +9,22 @@ export let currentUser = null;
 
 // Called once on app start. Resolves when auth state is known.
 export async function initAuth(onSignedIn, onSignedOut) {
+  // Check if this is a password reset redirect (Supabase puts #access_token in the URL)
+  const hash   = window.location.hash;
+  const params = new URLSearchParams(hash.replace('#', '?'));
+  const type   = params.get('type');
+
+  if (type === 'recovery') {
+    // Supabase has already set a session from the token in the URL
+    // Exchange it and show the reset form
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      currentUser = session.user;
+      showResetPasswordUI();
+      return;
+    }
+  }
+
   const { data: { session } } = await sb.auth.getSession();
   currentUser = session?.user ?? null;
 
@@ -24,6 +40,78 @@ export async function initAuth(onSignedIn, onSignedOut) {
 
 export async function signOut() {
   await sb.auth.signOut();
+}
+
+// ── Password reset UI ──────────────────────────────────────────
+function showResetPasswordUI() {
+  const screen = document.getElementById('auth-screen');
+  screen.style.display = 'flex';
+  document.getElementById('app-screen').style.display  = 'none';
+  document.getElementById('loading-overlay').style.display = 'none';
+
+  screen.innerHTML = `
+    <div class="auth-wordmark">Time<em>.</em>log</div>
+    <p class="auth-tagline">Set new password</p>
+    <div class="auth-card">
+      <div class="field">
+        <label class="label" for="reset-password">New password</label>
+        <input class="input" type="password" id="reset-password"
+          placeholder="••••••••" autocomplete="new-password" />
+      </div>
+      <div class="field">
+        <label class="label" for="reset-password-confirm">Confirm password</label>
+        <input class="input" type="password" id="reset-password-confirm"
+          placeholder="••••••••" autocomplete="new-password" />
+      </div>
+      <button class="btn btn-primary" id="reset-submit-btn">Set password</button>
+      <div id="reset-message" class="auth-error"></div>
+    </div>
+  `;
+
+  document.getElementById('reset-submit-btn').addEventListener('click', handlePasswordReset);
+  document.getElementById('reset-password-confirm').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handlePasswordReset();
+  });
+}
+
+async function handlePasswordReset() {
+  const password = document.getElementById('reset-password').value;
+  const confirm  = document.getElementById('reset-password-confirm').value;
+  const btn      = document.getElementById('reset-submit-btn');
+  const msgEl    = document.getElementById('reset-message');
+
+  msgEl.textContent = '';
+
+  if (!password || !confirm) {
+    msgEl.textContent = 'Please fill in both fields.';
+    return;
+  }
+  if (password !== confirm) {
+    msgEl.textContent = 'Passwords do not match.';
+    return;
+  }
+  if (password.length < 8) {
+    msgEl.textContent = 'Password must be at least 8 characters.';
+    return;
+  }
+
+  setLoading(btn, true, 'Saving…');
+  const { error } = await sb.auth.updateUser({ password });
+  setLoading(btn, false, 'Set password');
+
+  if (error) {
+    msgEl.textContent = error.message;
+    return;
+  }
+
+  // Clear the hash from the URL
+  history.replaceState(null, '', window.location.pathname);
+
+  // Sign out so they log in fresh with the new password
+  await sb.auth.signOut();
+
+  // Replace reset UI with login screen
+  location.reload();
 }
 
 // ── Auth UI ────────────────────────────────────────────────────
