@@ -5,7 +5,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 // ── Environment detection ──────────────────────────────────────
-const TEST_HOST = 'timelog-test.netlify.app'; // ← update to your test site hostname
+const TEST_HOST = 'test--timaskraning.netlify.app'; // ← update to your test site hostname
 
 function detectEnv() {
   const host = window.location.hostname;
