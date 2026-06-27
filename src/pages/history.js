@@ -172,40 +172,47 @@ function renderCycle(cycle, byDate, isInvoiced, key) {
 
       html += `
         <div class="entry-card${e.invoice_id ? ' invoiced' : ''}">
-          <div class="entry-card-top">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.35rem">
             <span class="entry-name">
               ${escHtml(e.name)}
               ${e.crosses_midnight ? '<span class="badge badge-accent">+midnight</span>' : ''}
               ${e.invoice_id ? '<span class="badge badge-green">invoiced</span>' : ''}
             </span>
-            <span class="entry-hours">${formatDuration(e.minutes)}</span>
+            <div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0">
+              <span class="entry-hours">${formatDuration(e.minutes)}</span>
+              ${canEdit ? `
+                <button class="entry-edit" data-id="${e.id}"
+                  style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.25rem 0.5rem;color:var(--text3);font-size:0.7rem;display:flex;align-items:center;gap:0.25rem;cursor:pointer;font-family:inherit">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="11" height="11" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  Edit
+                </button>` : ''}
+            </div>
           </div>
-          <div class="entry-time">
-            <span>${formatTime(e.time_from)}</span>
-            <span>→</span>
-            <span>${formatTime(e.time_until)}</span>
-            ${e.crosses_midnight ? '<span class="badge badge-accent" style="margin-left:0.25rem">next day</span>' : ''}
-            ${e.clients?.name ? `<span class="badge badge-neutral" style="margin-left:auto">${escHtml(e.clients.name)}</span>` : ''}
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:0.4rem">
+            <div class="entry-time" style="margin:0">
+              <span>${formatTime(e.time_from)}</span>
+              <span>→</span>
+              <span>${formatTime(e.time_until)}</span>
+              ${e.crosses_midnight ? '<span class="badge badge-accent" style="margin-left:0.25rem">next day</span>' : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:0.4rem">
+              ${e.clients?.name ? `<span class="badge badge-neutral">${escHtml(e.clients.name)}</span>` : ''}
+              ${canEdit ? `
+                <button class="entry-delete" data-id="${e.id}"
+                  style="background:var(--surface2);border:1px solid rgba(224,92,92,0.3);border-radius:6px;padding:0.25rem 0.5rem;color:var(--red);font-size:0.7rem;display:flex;align-items:center;gap:0.25rem;cursor:pointer;font-family:inherit">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="11" height="11" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                  Delete
+                </button>` : ''}
+            </div>
           </div>
-          <div class="time-bar">
-            <div class="time-bar-fill" style="left:${fromPct}%;width:${barW}%"></div>
-          </div>
-          ${canEdit ? `
-            <div style="display:flex;gap:0.4rem;position:absolute;top:0.625rem;right:0.625rem">
-              <button class="btn-icon entry-edit" data-id="${e.id}" title="Edit entry">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" width="14" height="14" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-              </button>
-              <button class="btn-icon entry-delete" data-id="${e.id}" title="Delete entry">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" width="14" height="14" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>` : ''}
         </div>
       `;
     });
