@@ -1,21 +1,20 @@
 # Time.log
 
-A mobile-first time logging app. Built with vanilla ES modules, hosted on Netlify, backed by Supabase. Part of a two-app system — time logging here, invoicing in a separate repo that shares the same Supabase project.
+Mobile-first time logging app for tracking billable hours. Built with vanilla ES modules, no build step, hosted on Netlify, backed by Supabase. Part of a two-app system — invoicing lives in a separate repo (`reikn.log`) that shares the same Supabase project.
 
 ---
 
-## Features
+## What it does
 
-- Log work entries with a description, date, start and end time
+- Log work entries with a description, date, client, and start/end time using 24h dropdowns
 - Handles shifts that cross midnight correctly
-- History split into **uninvoiced** and **invoiced** periods, grouped by payment cycle
-- Invoiced entries are locked — they can't be deleted after billing
-- CSV export with a configurable date range, defaulting to the current cycle
+- Edit or delete uninvoiced entries — invoiced entries are locked
+- History grouped by payment cycle, split into **Uninvoiced** and **Invoiced** sections
+- Remembers your last used client across sessions
 - Configurable payment cycle start day (default: 21st – 20th)
-- Draft preview email — receive a staging invoice on the 22nd for review before the real send on the 25th
-- Optional copy-to-self on every real invoice send
-- Multi-user with full data isolation via Supabase Row Level Security
-- Two environments: `dev` (local + Netlify test) and `prod`, auto-detected by hostname
+- Configurable draft preview email and copy-to-self for invoice notifications
+- Multi-user with full data isolation via Supabase RLS
+- Two environments (`dev` and `prod`) auto-detected by hostname — yellow **dev** badge in header
 
 ---
 
@@ -23,80 +22,111 @@ A mobile-first time logging app. Built with vanilla ES modules, hosted on Netlif
 
 ```
 timelog/
-  index.html                      — app shell (loads CSS + JS, no logic)
+  index.html                    — app shell, loads CSS + JS only
   styles/
-    main.css                      — full design system and component styles
+    main.css                    — full design system and component styles
   src/
-    main.js                       — bootstrapper, wires auth + routing + pages
-    supabase.js                   — single Supabase client, env detection
-    auth.js                       — auth state, session management, login UI
-    router.js                     — path-based client-side router
-    utils.js                      — pure helpers: duration, dates, cycles, formatting
+    supabase.js                 — single Supabase client, fill in your keys here
+    auth.js                     — auth state, session, login/reset UI
+    router.js                   — path-based client-side router
+    utils.js                    — pure helpers: duration, dates, cycles, formatting
+    main.js                     — bootstrapper, wires auth + routing + pages
     components/
-      toast.js                    — showToast(msg, type)
-      spinner.js                  — setLoading(btn, loading, label)
+      toast.js                  — showToast(msg, type)
+      spinner.js                — setLoading(btn, loading, label)
     pages/
-      log.js                      — time entry form (home page)
-      history.js                  — invoiced vs uninvoiced periods
-      export.js                   — CSV download
-      settings.js                 — cycle day, preview email, copy-to-self
+      log.js                    — time entry form (home page, /)
+      history.js                — invoiced vs uninvoiced periods (/history)
+      settings.js               — cycle day, preview email, copy-to-self (/settings)
   netlify/
     functions/
-      send-invoices.js            — stub (full implementation in invoices repo)
-      send-staging.js             — stub (full implementation in invoices repo)
-  netlify.toml                    — redirect rule for SPA routing
+      send-invoices.js          — stub only (full implementation in reikn.log repo)
+      send-staging.js           — stub only (full implementation in reikn.log repo)
+  netlify.toml                  — SPA redirect rule, dev port 8888
   package.json
   supabase/
     migrations/
-      001_timelog.sql             — profiles + entries tables
+      001_timelog.sql           — profiles + entries tables
+      003_entries_client.sql    — adds client_id to entries (run after 002_invoices.sql)
 ```
 
 ---
 
 ## Architecture
 
-This app and the invoices app share **one Supabase project** per environment. Each repo owns its own migration files — this repo creates `profiles` and `entries`, the invoices repo extends the same database with `clients`, `invoices`, `invoice_entries`, storage, and supporting functions.
+This app and the invoices app (`reikn.log`) share **one Supabase project per environment**. Each repo owns its own schema — this repo creates `profiles` and `entries`, the invoices repo extends the same database with `clients`, `invoices`, and `invoice_entries`.
 
 ```
-timelog.franklin.is     →  dev/prod Supabase project  ←  invoices.franklin.is
-(time logging)                  (shared DB)                (invoicing)
-       ↑ owns: profiles, entries      ↑ owns: clients, invoices, invoice_entries
+timelog.franklin.is   →   dev / prod Supabase project   ←   invoices.franklin.is
+owns: profiles, entries          (shared DB)                  owns: clients, invoices, invoice_entries
 ```
 
-The Netlify scheduled functions (send on 22nd and 25th) live in the invoices repo since that's where the PDF generation, email sending, and invoice logic live. The invoices app writes `invoice_id` and `invoiced_at` back to `entries` in this database when entries are billed.
+When the invoices app sends a real invoice, it writes `invoice_id` and `invoiced_at` back to `entries`. The timelog app reads these to determine which entries are locked.
+
+The Netlify scheduled functions (22nd and 25th) live entirely in the invoices repo.
+
+---
+
+## Security
+
+The anon key is intentionally in `src/supabase.js` — this is the Supabase-recommended pattern for client-side apps. It cannot be hidden in a static site without a server.
+
+**What protects the data:**
+- Supabase RLS enforces per-user data isolation at the database level — the anon key alone grants nothing beyond what policies allow
+- Public signups are disabled — accounts are created manually in the Supabase dashboard
+- Cloudflare IP geoblocking restricts access to Icelandic IPs, minimising exposure of the anon key
+- The service role key (which bypasses RLS) never appears in this repo — it lives only in Netlify environment variables in the invoices repo
+- Invoiced entries have no client-side delete path — the UI hides the button and the invoices function uses the service role key server-side
+
+Keep this repo **private** or ensure Cloudflare geoblocking is active before making it public.
 
 ---
 
 ## Setup
 
-### 1. Supabase projects
+### 1. Supabase
 
 Create **two** Supabase projects — one for dev/test, one for production.
 
-In each project, open the **SQL Editor** and run:
+In each project, run the migrations in this order:
 
 ```
-supabase/migrations/001_timelog.sql
+001_timelog.sql           — creates profiles + entries
+(002_invoices.sql)        — run this from the invoices repo first
+003_entries_client.sql    — adds client_id to entries
 ```
 
-This creates the tables this app owns. The invoices app has its own migration that extends the same database with the invoice schema — run that when setting up the invoices repo.
+Note: `003_entries_client.sql` depends on the `clients` table created by `002_invoices.sql` in the invoices repo. Run that first.
 
-#### What gets created
+**Disable public signups:** Authentication → Settings → turn off Enable Signups. Create accounts manually from the dashboard.
 
-- `profiles` — one row per user: cycle settings, preview email, and issuer detail columns (populated by the invoices app)
-- `entries` — time log entries with `invoice_id` and `invoiced_at` columns ready to be written back by the invoices app when entries are billed
-- RLS policies on both tables — users can only access their own data
-- A trigger that auto-creates a profile row on signup
+**Fix the trigger search path** if user creation fails with a database error:
+```sql
+drop trigger if exists on_auth_user_created on auth.users;
+drop function if exists handle_new_user();
 
-#### Recommended: disable public signups
+create or replace function handle_new_user()
+returns trigger language plpgsql security definer
+set search_path = public as $$
+begin
+  insert into public.profiles (id) values (new.id)
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
 
-Go to **Authentication → Settings** and turn off **Enable Signups** in both projects. Create accounts manually from the Supabase dashboard.
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure handle_new_user();
+```
 
----
+**Set the Site URL and redirect URLs:** Authentication → URL Configuration:
+- Site URL: your production domain
+- Redirect URLs: add your test Netlify URL and `http://localhost:8888`
 
-### 2. Configure the app
+### 2. Configure credentials
 
-Open `src/supabase.js` and fill in your project credentials:
+Open `src/supabase.js` and fill in:
 
 ```js
 const ENV_CONFIG = {
@@ -110,51 +140,23 @@ const ENV_CONFIG = {
   },
 };
 
-const TEST_HOST = 'timelog-test.netlify.app'; // ← your Netlify test site hostname
+const TEST_HOST = 'test--timaskraning.netlify.app'; // ← your Netlify test site hostname
 ```
 
-Find your keys in each Supabase project under **Settings → API**: Project URL and anon public key.
+Keys are under **Settings → API** in each Supabase project.
 
-The anon key is safe in client-side code — it's designed for this. RLS policies enforce data isolation at the database level regardless.
-
----
-
-### 3. Environment detection
-
-Environment is detected at runtime from `window.location.hostname`:
-
-| Hostname | Environment | Supabase project |
-|---|---|---|
-| `localhost` / `127.0.0.1` | `dev` | dev project |
-| `TEST_HOST` | `dev` | dev project |
-| anything else | `prod` | prod project |
-
-A yellow **dev** badge appears in the header in non-production environments. Nothing shows in production.
-
----
-
-### 4. Local development
-
-Requires Node.js and the Netlify CLI.
+### 3. Local development
 
 ```bash
 npm install
 netlify dev
 ```
 
-Open `http://localhost:8888`. Netlify Dev handles the SPA redirect rule and function execution locally, matching production behaviour exactly.
+Opens on `http://localhost:8888`.
 
----
+### 4. Deploy to Netlify
 
-### 5. Deploy to Netlify
-
-Connect the repo to Netlify. No build command is needed — `netlify.toml` is already configured.
-
-**Test site:** connect to Netlify, note the assigned subdomain, set it as `TEST_HOST` in `src/supabase.js`.
-
-**Production site:** connect your production domain. Both sites point at separate Supabase projects but share the same codebase.
-
-The `[[redirects]]` rule in `netlify.toml` sends all paths to `index.html` so client-side routing works correctly on direct URL loads and refreshes.
+Connect the repo to Netlify — no build command needed. The `[[redirects]]` rule in `netlify.toml` handles SPA routing automatically.
 
 ---
 
@@ -162,21 +164,10 @@ The `[[redirects]]` rule in `netlify.toml` sends all paths to `index.html` so cl
 
 Configured per user under **Settings** (default: start day 21).
 
-A cycle runs from the configured day in one month to the day before it in the next — e.g. with start day 21: **21 May – 20 Jun**.
+A cycle runs from the configured start day in one month to the day before it in the next — e.g. with start day 21: **21 May – 20 Jun**.
 
-Affects:
-- **History** — entries grouped and totalled per cycle, split into uninvoiced and invoiced sections
-- **Export** — date range defaults to the current cycle
-
----
-
-## Invoiced vs uninvoiced entries
-
-When the invoices app sends a real invoice on the 25th, it writes back to `entries`:
-- `invoice_id` — reference to the invoice row
-- `invoiced_at` — timestamp of when it was billed
-
-In the History view, entries with an `invoice_id` are shown in the **Invoiced** section with a green badge. The delete button is hidden on invoiced entries — they are locked for legal compliance.
+- **History** — entries grouped by cycle, split into Uninvoiced and Invoiced sections
+- **Settings** — preview email (where draft invoices land on the 22nd) and copy-to-self toggle
 
 ---
 
@@ -187,18 +178,10 @@ In the History view, entries with an `invoice_id` are shown in the **Invoiced** 
 |---|---|---|
 | `id` | uuid | References `auth.users` |
 | `cycle_start_day` | integer | Default 21 |
-| `preview_email` | text | Staging invoice recipient (22nd send) |
+| `preview_email` | text | Draft invoice recipient (22nd) |
 | `copy_to_self` | boolean | CC on real invoice sends |
-| `issuer_name` | text | Used by invoices app |
-| `issuer_kennitala` | text | Used by invoices app |
-| `issuer_address` | text | Used by invoices app |
-| `issuer_city` | text | Used by invoices app |
-| `issuer_email` | text | Used by invoices app |
-| `issuer_vsk` | text | VSK number, blank if not registered |
-| `bank_account` | text | Default bank details |
-| `bank_utibú` | text | |
-| `bank_hb` | text | |
-| `bank_reikningur` | text | |
+| `issuer_name`, `issuer_kennitala`, `issuer_address`, `issuer_city`, `issuer_email`, `issuer_vsk` | text | Set in invoices app settings |
+| `bank_account`, `bank_utibú`, `bank_hb`, `bank_reikningur` | text | Default bank details, set in invoices app |
 | `default_rate` | integer | ISK per hour fallback |
 | `invoice_prefix` | text | Default invoice prefix |
 
@@ -207,27 +190,15 @@ In the History view, entries with an `invoice_id` are shown in the **Invoiced** 
 |---|---|---|
 | `id` | uuid | Primary key |
 | `user_id` | uuid | References `auth.users` |
+| `client_id` | uuid | References `clients(id)` |
 | `name` | text | Description |
 | `date` | date | Work date |
 | `time_from` | time | Start time |
 | `time_until` | time | End time |
 | `minutes` | integer | Pre-calculated duration |
 | `crosses_midnight` | boolean | True if shift spans midnight |
-| `invoice_id` | uuid | Set when billed — references `invoices(id)` |
-| `invoiced_at` | timestamptz | Set when billed |
+| `invoice_id` | uuid | Set by invoices app when billed |
+| `invoiced_at` | timestamptz | Set by invoices app when billed |
 | `created_at` | timestamptz | Auto-set |
 
-### `clients`, `invoices`, `invoice_entries`
-
-Defined in the invoices repo migration. Used exclusively by the invoices app. See the invoices repo README for details.
-
----
-
-## Security notes
-
-- The anon key is intentionally in client-side code — this is the Supabase-recommended pattern
-- RLS is enforced at the database level on every table — a user with the anon key can only access their own rows
-- Invoiced entries cannot be deleted by the client — the delete RLS policy only applies to entries without an `invoice_id`; the invoice function uses the service role key server-side
-- The service role key is never in this repo — it lives only in Netlify environment variables in the invoices repo
-- Invoice PDFs are stored in a private Supabase Storage bucket, served via short-lived signed URLs only
-- Invoices and invoice entries have no delete RLS policy — required by Icelandic law (reglugerð nr. 505/2013, 7-year retention)
+`clients`, `invoices`, and `invoice_entries` are defined and owned by the invoices repo.

@@ -8,7 +8,6 @@ import { showToast } from './components/toast.js';
 
 import * as LogPage      from './pages/log.js';
 import * as HistoryPage  from './pages/history.js';
-import * as ExportPage   from './pages/export.js';
 import * as SettingsPage from './pages/settings.js';
 
 // ── Profile (shared mutable state) ────────────────────────────
@@ -43,11 +42,6 @@ function setupRoutes() {
   register('/history', () => {
     activatePage('page-history');
     HistoryPage.mount(getPageEl('page-history'), profile);
-  });
-
-  register('/export', () => {
-    activatePage('page-export');
-    ExportPage.mount(getPageEl('page-export'), profile);
   });
 
   register('/settings', () => {

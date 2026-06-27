@@ -56,7 +56,6 @@
   <main>
     <div class="page active" id="page-log"></div>
     <div class="page" id="page-history"></div>
-    <div class="page" id="page-export"></div>
     <div class="page" id="page-settings"></div>
   </main>
 
@@ -76,14 +75,6 @@
       </svg>
       History
     </button>
-    <button class="nav-item" data-route="/export">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      Export
-    </button>
     <button class="nav-item" data-route="/settings">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <circle cx="12" cy="12" r="3"/>
@@ -92,6 +83,56 @@
       Settings
     </button>
   </nav>
+</div>
+
+<!-- Edit entry modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Edit Entry</div>
+    <input type="hidden" id="edit-id" />
+    <div class="card">
+      <div class="field">
+        <label class="label" for="edit-client">Client</label>
+        <select class="input" id="edit-client"></select>
+      </div>
+      <div class="field">
+        <label class="label" for="edit-name">Description</label>
+        <input class="input" type="text" id="edit-name" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label class="label" for="edit-date">Date</label>
+        <input class="input" type="date" id="edit-date" />
+      </div>
+      <div class="field">
+        <div class="input-row">
+          <div>
+            <label class="label">From</label>
+            <div class="time-select">
+              <select class="input time-select-h" id="edit-from-h"></select>
+              <span class="time-colon">:</span>
+              <select class="input time-select-m" id="edit-from-m"></select>
+            </div>
+          </div>
+          <div>
+            <label class="label">Until</label>
+            <div class="time-select">
+              <select class="input time-select-h" id="edit-until-h"></select>
+              <span class="time-colon">:</span>
+              <select class="input time-select-m" id="edit-until-m"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="duration-display">
+        <span class="duration-label">Duration</span>
+        <span class="duration-value" id="edit-duration-value">—</span>
+      </div>
+      <div id="edit-midnight" style="height:1.1rem;margin-top:0.4rem;text-align:center"></div>
+    </div>
+    <button class="btn btn-primary" id="edit-save-btn">Save changes</button>
+    <button class="btn btn-ghost" id="edit-cancel-btn" style="margin-top:0.5rem">Cancel</button>
+  </div>
 </div>
 
 <!-- Toast -->

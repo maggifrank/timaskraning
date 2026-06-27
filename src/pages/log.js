@@ -47,6 +47,8 @@ function setTimeValue(prefix, value) {
   document.getElementById(`${prefix}-m`).value = MINS.includes(mRounded) ? mRounded : '00';
 }
 
+const LAST_CLIENT_KEY = 'timelog_last_client';
+
 export async function mount(container) {
   const { data: clients } = await sb
     .from('clients')
@@ -55,22 +57,41 @@ export async function mount(container) {
     .eq('archived', false)
     .order('name', { ascending: true });
 
-  const hasClients = clients && clients.length > 0;
+  const hasClients   = clients && clients.length > 0;
+  const lastClientId = localStorage.getItem(LAST_CLIENT_KEY);
 
   container.innerHTML = `
     <div class="card">
       <div class="field">
-        <label class="label" for="log-client">Client</label>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem">
+          <label class="label" for="log-client" style="margin-bottom:0">Client</label>
+          <button class="btn-quick-add" id="log-quick-add-btn" title="Quick add client">+ New</button>
+        </div>
         ${hasClients
           ? `<select class="input" id="log-client">
                <option value="">— Select client —</option>
-               ${clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+               ${clients.map(c =>
+                 `<option value="${c.id}"${c.id === lastClientId ? ' selected' : ''}>${c.name}</option>`
+               ).join('')}
              </select>`
-          : `<div class="input" style="color:var(--text3);cursor:default">
-               No clients yet — add them in the invoices app
+          : `<div class="input" style="color:var(--text3);cursor:default" id="log-no-clients">
+               No clients yet — tap "+ New" to add one
              </div>
              <input type="hidden" id="log-client" value="" />`
         }
+        <div id="log-quick-add-form" style="display:none;margin-top:0.5rem">
+          <div style="display:flex;gap:0.5rem">
+            <input class="input" type="text" id="log-quick-add-name"
+              placeholder="Client name" autocomplete="off" style="flex:1" />
+            <button class="btn btn-primary" id="log-quick-add-save-btn"
+              style="width:auto;padding:0.7rem 1rem;font-size:0.85rem">Save</button>
+            <button class="btn btn-ghost" id="log-quick-add-cancel-btn"
+              style="width:auto;padding:0.7rem 0.75rem;font-size:0.85rem">✕</button>
+          </div>
+          <p style="font-size:0.7rem;color:var(--text3);margin-top:0.4rem">
+            Billing details can be completed in the invoices app before sending.
+          </p>
+        </div>
       </div>
       <div class="field">
         <label class="label" for="log-name">Description</label>
@@ -105,19 +126,88 @@ export async function mount(container) {
 
   document.getElementById('log-date').value = todayISO();
 
-  // Live duration on any time select change
+  // Default minutes to 00
+  document.getElementById('log-from-m').value  = '00';
+  document.getElementById('log-until-m').value = '00';
+
   ['log-from-h','log-from-m','log-until-h','log-until-m'].forEach(id => {
     document.getElementById(id).addEventListener('change', updateDuration);
   });
 
   document.getElementById('log-save-btn').addEventListener('click', saveEntry);
 
-  // Enter key submits from text/date inputs
   ['log-name', 'log-date'].forEach(id => {
     document.getElementById(id)?.addEventListener('keydown', e => {
       if (e.key === 'Enter') saveEntry();
     });
   });
+
+  // Quick-add client
+  document.getElementById('log-quick-add-btn').addEventListener('click', () => {
+    document.getElementById('log-quick-add-form').style.display = 'block';
+    document.getElementById('log-quick-add-name').focus();
+  });
+
+  document.getElementById('log-quick-add-cancel-btn').addEventListener('click', () => {
+    document.getElementById('log-quick-add-form').style.display = 'none';
+    document.getElementById('log-quick-add-name').value = '';
+  });
+
+  document.getElementById('log-quick-add-save-btn').addEventListener('click', quickAddClient);
+  document.getElementById('log-quick-add-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') quickAddClient();
+  });
+}
+
+async function quickAddClient() {
+  const name = document.getElementById('log-quick-add-name').value.trim();
+  if (!name) { document.getElementById('log-quick-add-name').classList.add('error'); return; }
+
+  const btn = document.getElementById('log-quick-add-save-btn');
+  setLoading(btn, true, '');
+
+  const { data, error } = await sb.from('clients').insert({
+    user_id:         currentUser.id,
+    name,
+    email:           'incomplete@placeholder.is', // required field, must be updated in invoices app
+    invoice_prefix:  'INV',
+    invoice_counter: 1000,
+    hourly_rate:     0,
+  }).select('id, name').single();
+
+  setLoading(btn, false, 'Save');
+
+  if (error) { showToast('Could not create client', 'error'); return; }
+
+  // Add to dropdown and select it
+  const sel = document.getElementById('log-client');
+  if (sel) {
+    // Replace the "no clients" placeholder if it exists
+    const placeholder = document.getElementById('log-no-clients');
+    if (placeholder) {
+      placeholder.remove();
+      const newSel = document.createElement('select');
+      newSel.className = 'input';
+      newSel.id = 'log-client';
+      newSel.innerHTML = `<option value="">— Select client —</option>`;
+      placeholder.parentNode.insertBefore(newSel, placeholder.nextSibling);
+    }
+
+    const opt = document.createElement('option');
+    opt.value    = data.id;
+    opt.text     = data.name;
+    opt.selected = true;
+    document.getElementById('log-client').appendChild(opt);
+  } else {
+    // Rebuild the whole form with new client list
+    mount(document.getElementById('page-log'));
+    return;
+  }
+
+  localStorage.setItem(LAST_CLIENT_KEY, data.id);
+  document.getElementById('log-quick-add-form').style.display = 'none';
+  document.getElementById('log-quick-add-name').value = '';
+  showToast(`"${name}" added — complete billing details in the invoices app`);
 }
 
 function updateDuration() {
@@ -177,14 +267,13 @@ async function saveEntry() {
   }
 
   showToast('Entry saved');
-  document.getElementById('log-client').value = clientId;
-  document.getElementById('log-name').value   = '';
-  setTimeValue('log-from', '');
-  setTimeValue('log-until', '');
+  localStorage.setItem(LAST_CLIENT_KEY, clientId);
+  document.getElementById('log-client').value  = clientId;
+  document.getElementById('log-name').value    = '';
   document.getElementById('log-from-h').value  = '';
-  document.getElementById('log-from-m').value  = '';
+  document.getElementById('log-from-m').value  = '00';
   document.getElementById('log-until-h').value = '';
-  document.getElementById('log-until-m').value = '';
+  document.getElementById('log-until-m').value = '00';
   document.getElementById('log-duration-value').textContent = '—';
   document.getElementById('log-midnight').innerHTML = '';
   document.getElementById('log-name').focus();
