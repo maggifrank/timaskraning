@@ -354,6 +354,10 @@ function shake(id) {
 
 async function deleteEntry(id) {
   if (!confirm('Delete this entry? This cannot be undone.')) return;
+
+  // Remove any draft invoice_entries snapshots referencing this entry
+  await sb.from('invoice_entries').delete().eq('entry_id', id);
+
   const { error } = await sb
     .from('entries').delete().eq('id', id).eq('user_id', currentUser.id);
   if (error) { showToast('Could not delete entry', 'error'); return; }
