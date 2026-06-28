@@ -1,7 +1,7 @@
 // src/main.js
 // App entry point. Wires together auth, routing, and pages.
 
-import { sb, ENV } from './supabase.js';
+import { sb, ENV, COMPANION_URL } from './supabase.js';
 import { initAuth, signOut, mountAuthUI, currentUser } from './auth.js';
 import { register, start, navigate }  from './router.js';
 import { showToast } from './components/toast.js';
@@ -65,6 +65,8 @@ async function onSignedIn(user) {
 
   // Topbar
   document.getElementById('topbar-user').textContent = user.email;
+  const companion = document.getElementById('nav-companion');
+  if (companion) companion.href = COMPANION_URL;
   const badge = document.getElementById('env-badge');
   if (ENV === 'dev') { badge.textContent = 'dev'; badge.className = 'env-badge dev'; }
   else badge.className = 'env-badge';
