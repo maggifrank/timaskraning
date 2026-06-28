@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#0d0f18" />
   <title>Logger</title>
   <link rel="stylesheet" href="/styles/main.css" />
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
 </head>
 <body>
 
@@ -70,13 +72,6 @@
       </svg>
       Log
     </button>
-    <button class="nav-item" data-route="/history">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path d="M12 8v4l3 3"/>
-        <path d="M3.05 11a9 9 0 1 1 .5 4M3 16v-5h5"/>
-      </svg>
-      History
-    </button>
     <button class="nav-item" data-route="/km">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <circle cx="12" cy="12" r="10"/>
@@ -84,6 +79,13 @@
         <path d="M16.24 7.76l-2.12 2.12"/>
       </svg>
       KM
+    </button>
+    <button class="nav-item" data-route="/history">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M12 8v4l3 3"/>
+        <path d="M3.05 11a9 9 0 1 1 .5 4M3 16v-5h5"/>
+      </svg>
+      History
     </button>
     <button class="nav-item" data-route="/settings">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -142,6 +144,51 @@
     </div>
     <button class="btn btn-primary" id="edit-save-btn">Save changes</button>
     <button class="btn btn-ghost" id="edit-cancel-btn" style="margin-top:0.5rem">Cancel</button>
+  </div>
+</div>
+
+<!-- KM edit modal -->
+<div class="modal-overlay" id="km-edit-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Edit KM Entry</div>
+    <input type="hidden" id="km-edit-id" />
+    <div class="card">
+      <div class="field">
+        <label class="label">Client</label>
+        <select class="input" id="km-edit-client"></select>
+      </div>
+      <div class="field">
+        <label class="label">Date</label>
+        <input class="input" type="date" id="km-edit-date" />
+      </div>
+      <div class="field input-row">
+        <div>
+          <label class="label">From</label>
+          <input class="input" type="text" id="km-edit-from" autocomplete="off" />
+        </div>
+        <div>
+          <label class="label">To</label>
+          <input class="input" type="text" id="km-edit-to" autocomplete="off" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Kilometres</label>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <input class="input" type="number" id="km-edit-km" min="0" step="0.1" style="flex:1" />
+          <button class="btn-xs btn-xs-outline" id="km-edit-roundtrip" data-active="false"
+            onclick="const b=this;const a=b.dataset.active!=='true';b.dataset.active=a;b.style.background=a?'var(--accent)':'';b.style.color=a?'#fff':'';b.style.border=a?'none':''">
+            ↩ Round trip
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Notes</label>
+        <input class="input" type="text" id="km-edit-notes" placeholder="optional" />
+      </div>
+    </div>
+    <button class="btn btn-primary" id="km-edit-save-btn">Save changes</button>
+    <button class="btn btn-ghost" id="km-edit-cancel-btn" style="margin-top:0.5rem">Cancel</button>
   </div>
 </div>
 

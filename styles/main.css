@@ -666,3 +666,20 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 1.25rem;
   color: var(--text);
 }
+
+/* ── History subsections (Hours / KM) ── */
+.subsection-block { margin-bottom: 0.5rem; }
+.subsection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  cursor: pointer;
+  margin-bottom: 0.4rem;
+  user-select: none;
+}
+.subsection-block.collapsed .subsection-body { display: none; }
+.subsection-label { font-size: 0.75rem; font-weight: 700; color: var(--text3); }
+.subsection-total { font-size: 0.75rem; font-weight: 700; color: var(--text2); font-family: var(--font-mono); }
