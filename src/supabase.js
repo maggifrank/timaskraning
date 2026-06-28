@@ -1,10 +1,6 @@
 // src/supabase.js
-// Single Supabase client instance shared across the entire app.
-// Loaded once — all modules import from here.
-
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// ── Environment detection ──────────────────────────────────────
 const TEST_HOST = 'test--timaskraning.netlify.app';
 
 function detectEnv() {
@@ -28,7 +24,7 @@ const ENV_CONFIG = {
   prod: {
     url:          'https://xmgbjchkjlclknkjjjkh.supabase.co',
     anonKey:      'sb_publishable_IbiaMr5gsGUU8qtoeak5RQ_4fqZGFcV',
-    companionUrl: 'https://invoicing.franklin.is',
+    companionUrl: 'https://invoicing.talva.is',
   },
 };
 
