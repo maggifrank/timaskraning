@@ -35,7 +35,16 @@ export function mount(container, profile) {
     </div>
 
     <div class="card settings-section">
-      <div class="section-label">Invoice notifications</div>
+      <div class="section-label">Rates</div>
+      <div class="field">
+        <label class="label">Default km rate (ISK per km)</label>
+        <div class="setting-desc" style="margin-bottom:0.5rem">Used when no per-client km rate is set.</div>
+        <input class="input" type="number" id="s-km-rate" placeholder="e.g. 95"
+          value="${escHtml(profile?.default_km_rate)}" style="width:120px" />
+      </div>
+    </div>
+
+    <div class="card settings-section">
       <div class="setting-row">
         <div class="setting-info">
           <div class="setting-name">Draft preview email</div>
@@ -87,6 +96,7 @@ async function saveSettings(profile) {
     cycle_start_day:  cycleDay,
     preview_email:    previewEmail || null,
     copy_to_self:     copyToSelf,
+    default_km_rate:  parseInt(document.getElementById('s-km-rate').value) || null,
   });
 
   setLoading(btn, false, 'Save settings');

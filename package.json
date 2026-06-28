@@ -1,5 +1,5 @@
 {
-  "name": "timelog",
+  "name": "logger",
   "version": "1.0.0",
   "description": "Mobile-first time logging app",
   "devDependencies": {

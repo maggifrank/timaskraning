@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name="theme-color" content="#0d0f18" />
-  <title>Time.log</title>
+  <title>Logger</title>
   <link rel="stylesheet" href="/styles/main.css" />
 </head>
 <body>
@@ -16,7 +16,7 @@
 
 <!-- ── Auth screen ── -->
 <div id="auth-screen" style="display:none">
-  <div class="auth-wordmark">Time<em>.</em>log</div>
+  <div class="auth-wordmark">Logger</div>
   <p class="auth-tagline">Track your hours</p>
 
   <div class="auth-card">
@@ -35,6 +35,7 @@
         placeholder="••••••••" autocomplete="current-password" />
     </div>
     <button class="btn btn-primary" id="auth-submit-btn">Sign in</button>
+    <button class="btn btn-ghost" id="auth-forgot-btn" style="margin-top:0.25rem;font-size:0.8rem">Forgot password?</button>
     <div id="auth-message" class="auth-error"></div>
   </div>
 </div>
@@ -44,7 +45,7 @@
 
   <!-- Top bar -->
   <header class="topbar">
-    <div class="topbar-wordmark">Time<em>.</em>log</div>
+    <div class="topbar-wordmark">Logger</div>
     <div class="topbar-right">
       <span class="env-badge" id="env-badge"></span>
       <span class="topbar-user" id="topbar-user"></span>
@@ -56,6 +57,7 @@
   <main>
     <div class="page active" id="page-log"></div>
     <div class="page" id="page-history"></div>
+    <div class="page" id="page-km"></div>
     <div class="page" id="page-settings"></div>
   </main>
 
@@ -74,6 +76,14 @@
         <path d="M3.05 11a9 9 0 1 1 .5 4M3 16v-5h5"/>
       </svg>
       History
+    </button>
+    <button class="nav-item" data-route="/km">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 8v4l3 3"/>
+        <path d="M16.24 7.76l-2.12 2.12"/>
+      </svg>
+      KM
     </button>
     <button class="nav-item" data-route="/settings">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">

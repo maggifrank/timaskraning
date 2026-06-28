@@ -8,10 +8,30 @@
 -- ── Profiles ─────────────────────────────────────────────────
 -- One row per user. Auto-created on signup via trigger.
 create table profiles (
-  id               uuid primary key references auth.users(id) on delete cascade,
-  cycle_start_day  integer not null default 21,  -- day of month pay period starts
-  preview_email    text,                          -- staging invoice recipient (22nd)
-  copy_to_self     boolean not null default false -- cc issuer on real invoices
+  id                uuid primary key references auth.users(id) on delete cascade,
+  cycle_start_day   integer not null default 21,
+  preview_email     text,
+  copy_to_self      boolean not null default false,
+
+  -- Issuer details (appear on every invoice)
+  issuer_name       text,
+  issuer_kennitala  text,
+  issuer_address    text,
+  issuer_city       text,
+  issuer_email      text,
+  issuer_vsk        text,
+
+  -- Default bank details
+  bank_account      text,
+  bank_utibú        text,
+  bank_hb           text,
+  bank_reikningur   text,
+
+  -- Defaults
+  default_rate      integer,
+  invoice_prefix    text,
+  vsk_rate          numeric(5,2) not null default 0,
+  default_km_rate   integer
 );
 
 alter table profiles enable row level security;
