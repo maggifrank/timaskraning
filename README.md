@@ -17,6 +17,7 @@ Mobile-first time and kilometre logging app for tracking billable hours and driv
 - Configurable payment cycle start day (default: 21st of month)
 - Configurable default km rate in settings
 - Multi-user with full data isolation via Supabase RLS
+- Companion app link in the bottom nav — opens Reikn.log directly, URL resolved per environment
 - Two environments (`dev` and `prod`) auto-detected by hostname — yellow **dev** badge in header
 
 ---
@@ -62,7 +63,7 @@ logger/
 This app and the invoices app (`reikn.log`) share **one Supabase project per environment**. Each repo owns its own schema — this repo creates `profiles`, `entries`, and `km_entries`. The invoices repo extends the same database with `clients`, `invoices`, and `invoice_entries`.
 
 ```
-logger.franklin.is    →   dev / prod Supabase project   ←   invoices.franklin.is
+logger.talva.is        →   dev / prod Supabase project   ←   invoicing.talva.is
 owns: profiles, entries,         (shared DB)                  owns: clients, invoices,
       km_entries                                               invoice_entries
 ```
@@ -114,17 +115,26 @@ Open `src/supabase.js`:
 ```js
 const ENV_CONFIG = {
   dev: {
-    url:     'YOUR_DEV_SUPABASE_URL',
-    anonKey: 'YOUR_DEV_SUPABASE_ANON_KEY',
+    url:          'YOUR_DEV_SUPABASE_URL',
+    anonKey:      'YOUR_DEV_SUPABASE_ANON_KEY',
+    companionUrl: 'http://localhost:8889',
+  },
+  test: {
+    url:          'YOUR_DEV_SUPABASE_URL',
+    anonKey:      'YOUR_DEV_SUPABASE_ANON_KEY',
+    companionUrl: 'https://test--enchanting-sfogliatella-b979c6.netlify.app',
   },
   prod: {
-    url:     'YOUR_PROD_SUPABASE_URL',
-    anonKey: 'YOUR_PROD_SUPABASE_ANON_KEY',
+    url:          'YOUR_PROD_SUPABASE_URL',
+    anonKey:      'YOUR_PROD_SUPABASE_ANON_KEY',
+    companionUrl: 'https://invoicing.talva.is',
   },
 };
 
 const TEST_HOST = 'test--timaskraning.netlify.app'; // ← your test Netlify subdomain
 ```
+
+`companionUrl` is the invoices app URL for the cross-app nav link in the bottom bar.
 
 ### 3. Local development
 
