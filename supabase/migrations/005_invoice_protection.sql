@@ -17,6 +17,8 @@
 -- ── entries ──────────────────────────────────────────────────
 drop policy if exists "Users can update own entries" on entries;
 drop policy if exists "Users can delete own entries" on entries;
+drop policy if exists "Users can update own uninvoiced entries" on entries;
+drop policy if exists "Users can delete own uninvoiced entries" on entries;
 
 create policy "Users can update own uninvoiced entries"
   on entries for update
@@ -34,6 +36,8 @@ grant update (name, date, time_from, time_until, minutes, crosses_midnight, clie
 -- ── km_entries ───────────────────────────────────────────────
 drop policy if exists "Users can update own km entries" on km_entries;
 drop policy if exists "Users can delete own km entries" on km_entries;
+drop policy if exists "Users can update own uninvoiced km entries" on km_entries;
+drop policy if exists "Users can delete own uninvoiced km entries" on km_entries;
 
 create policy "Users can update own uninvoiced km entries"
   on km_entries for update
