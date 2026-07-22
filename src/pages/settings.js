@@ -4,7 +4,7 @@ import { sb } from '../supabase.js';
 import { currentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { setLoading } from '../components/spinner.js';
-import { getCycleForDate, cyclePeriodLabel, isoDate } from '../utils.js';
+import { getCycleForDate, cyclePeriodLabel, isoDate, escHtml } from '../utils.js';
 
 export function mount(container, profile) {
   const startDay = profile?.cycle_start_day ?? 21;
@@ -116,8 +116,4 @@ async function saveSettings(profile) {
 function buildCyclePreview(day) {
   const { start, end } = getCycleForDate(new Date(), day);
   return `Current cycle: ${cyclePeriodLabel(isoDate(start), isoDate(end))}`;
-}
-
-function escHtml(str) {
-  return String(str ?? '').replace(/"/g, '&quot;');
 }

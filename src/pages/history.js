@@ -354,6 +354,14 @@ function setupModals() {
   document.getElementById('km-edit-save-btn')?.addEventListener('click', saveKmEdit);
   document.getElementById('km-edit-cancel-btn')?.addEventListener('click', () => closeModal('km-edit-modal'));
 
+  document.getElementById('km-edit-roundtrip')?.addEventListener('click', function () {
+    const active = this.dataset.active !== 'true';
+    this.dataset.active   = active;
+    this.style.background = active ? 'var(--accent)' : '';
+    this.style.color      = active ? '#fff' : '';
+    this.style.border     = active ? 'none' : '';
+  });
+
   ['edit-modal','km-edit-modal'].forEach(id => {
     document.getElementById(id)?.addEventListener('click', e => {
       if (e.target === document.getElementById(id)) closeModal(id);

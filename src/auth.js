@@ -19,7 +19,7 @@ export async function initAuth(onSignedIn, onSignedOut) {
     currentUser = session?.user ?? null;
 
     // Show password form for recovery and invite events
-    if (_event === 'PASSWORD_RECOVERY' || _event === 'USER_UPDATED' && type === 'recovery') {
+    if (_event === 'PASSWORD_RECOVERY' || (_event === 'USER_UPDATED' && type === 'recovery')) {
       showResetPasswordUI('Set new password');
       return;
     }

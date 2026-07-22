@@ -7,7 +7,7 @@ import { showToast } from '../components/toast.js';
 import { setLoading } from '../components/spinner.js';
 import {
   calcMinutes, formatDuration,
-  todayISO,
+  todayISO, escHtml,
 } from '../utils.js';
 
 // Build hour options 00–23
@@ -71,7 +71,7 @@ export async function mount(container) {
           ? `<select class="input" id="log-client">
                <option value="">— Select client —</option>
                ${clients.map(c =>
-                 `<option value="${c.id}"${c.id === lastClientId ? ' selected' : ''}>${c.name}</option>`
+                 `<option value="${c.id}"${c.id === lastClientId ? ' selected' : ''}>${escHtml(c.name)}</option>`
                ).join('')}
              </select>`
           : `<div class="input" style="color:var(--text3);cursor:default" id="log-no-clients">
