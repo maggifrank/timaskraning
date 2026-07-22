@@ -51,9 +51,10 @@ logger/
   package.json
   supabase/
     migrations/
-      001_timelog.sql           — profiles + entries tables + RLS + trigger
-      003_entries_client.sql    — adds client_id to entries (run after 002_invoices.sql)
-      004_km_entries.sql        — km_entries table + RLS + km_rate columns
+      001_timelog.sql              — profiles + entries tables + RLS + trigger
+      003_entries_client.sql       — adds client_id to entries (run after 002_invoices.sql)
+      004_km_entries.sql           — km_entries table + RLS + km_rate columns
+      005_invoice_protection.sql   — locks invoiced entries at the DB level (RLS + column grants)
 ```
 
 ---
@@ -81,7 +82,9 @@ The anon key is intentionally in `src/supabase.js` — this is the Supabase-reco
 - Public signups are disabled — accounts are created manually in the Supabase dashboard
 - Cloudflare IP geoblocking restricts access to Icelandic IPs
 - The service role key never appears in this repo — it lives only in Netlify env vars in the invoices repo
-- Invoiced entries are locked at both the UI level (buttons hidden) and DB level
+- Invoiced entries are locked at both the UI level (buttons hidden) and the DB level — `005_invoice_protection.sql` blocks `UPDATE`/`DELETE` on invoiced rows via RLS, and revokes column-level `UPDATE` on `invoice_id`/`invoiced_at` so only the invoices app's service role can set them
+- A `Content-Security-Policy` header (set in `netlify.toml`) restricts script sources to `'self'` and the Supabase CDN — no inline scripts anywhere in the app
+- The Supabase JS client is pinned to an exact CDN version rather than a floating tag, so a new upstream release can't silently change client-side behavior
 
 Keep this repo **private** or ensure Cloudflare geoblocking is active before making it public.
 
@@ -96,10 +99,11 @@ Create **two** Supabase projects — one for dev/test, one for production.
 Run migrations in this order in each project:
 
 ```
-001_timelog.sql           — profiles + entries + RLS + trigger
-002_invoices.sql          — from the invoices repo (clients, invoices, invoice_entries)
-003_entries_client.sql    — adds client_id FK to entries (depends on clients table)
-004_km_entries.sql        — km_entries table, km_rate columns on profiles + clients
+001_timelog.sql              — profiles + entries + RLS + trigger
+002_invoices.sql             — from the invoices repo (clients, invoices, invoice_entries)
+003_entries_client.sql       — adds client_id FK to entries (depends on clients table)
+004_km_entries.sql           — km_entries table, km_rate columns on profiles + clients
+005_invoice_protection.sql   — locks invoiced entries: RLS + column-level grants
 ```
 
 **Disable public signups:** Authentication → Settings → disable "Enable Signups". Create accounts manually.
@@ -194,10 +198,14 @@ Ensure all your site URLs are added to **Supabase → Authentication → URL Con
 - SELECT, INSERT, UPDATE: `auth.uid() = id`
 
 ### `entries`
-- SELECT, INSERT, UPDATE, DELETE: `auth.uid() = user_id`
+- SELECT, INSERT: `auth.uid() = user_id`
+- UPDATE, DELETE: `auth.uid() = user_id AND invoice_id is null` — invoiced rows are read-only to the owning user
+- Column-level `UPDATE` grant is further restricted to `name, date, time_from, time_until, minutes, crosses_midnight, client_id` — `invoice_id`/`invoiced_at` can only be set by the service role (see `005_invoice_protection.sql`)
 
 ### `km_entries`
-- SELECT, INSERT, UPDATE, DELETE: `auth.uid() = user_id`
+- SELECT, INSERT: `auth.uid() = user_id`
+- UPDATE, DELETE: `auth.uid() = user_id AND invoice_id is null`
+- Column-level `UPDATE` grant restricted to `client_id, date, from_location, to_location, kilometres, is_round_trip, notes`
 
 ---
 
