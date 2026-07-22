@@ -1,5 +1,5 @@
 // src/supabase.js
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm';
 
 const TEST_HOST = 'test--timaskraning.netlify.app';
 

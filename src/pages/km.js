@@ -70,8 +70,8 @@ function renderLog() {
         <label class="label">Kilometres</label>
         <div style="display:flex;gap:0.5rem;align-items:center">
           <input class="input" type="number" id="km-km" placeholder="0" min="0" step="0.1"
-            style="flex:1" oninput="updateKmPreview()" />
-          <button class="btn-xs btn-xs-outline" id="km-roundtrip-btn" onclick="toggleRoundTrip()"
+            style="flex:1" />
+          <button class="btn-xs btn-xs-outline" id="km-roundtrip-btn"
             style="white-space:nowrap">↩ Round trip</button>
         </div>
         <div id="km-preview" style="font-size:0.75rem;color:var(--text3);margin-top:0.4rem"></div>
@@ -82,18 +82,21 @@ function renderLog() {
       </div>
     </div>
     <button class="btn btn-primary" id="km-save-btn">Log kilometres</button>
-    <button class="btn btn-ghost" style="margin-top:0.5rem" onclick="window.switchKmView('history')">
+    <button class="btn btn-ghost" style="margin-top:0.5rem" id="km-view-history-btn">
       View history
     </button>
   `;
 
   document.getElementById('km-save-btn')?.addEventListener('click', saveKmEntry);
   document.getElementById('km-from')?.addEventListener('keydown', e => { if (e.key === 'Enter') saveKmEntry(); });
+  document.getElementById('km-km')?.addEventListener('input', updateKmPreview);
+  document.getElementById('km-roundtrip-btn')?.addEventListener('click', toggleRoundTrip);
+  document.getElementById('km-view-history-btn')?.addEventListener('click', () => switchView('history'));
 }
 
 let _isRoundTrip = false;
 
-window.toggleRoundTrip = () => {
+function toggleRoundTrip() {
   _isRoundTrip = !_isRoundTrip;
   const btn = document.getElementById('km-roundtrip-btn');
   if (btn) {
@@ -102,9 +105,9 @@ window.toggleRoundTrip = () => {
     btn.style.border     = _isRoundTrip ? 'none' : '';
   }
   updateKmPreview();
-};
+}
 
-window.updateKmPreview = () => {
+function updateKmPreview() {
   const km   = parseFloat(document.getElementById('km-km')?.value) || 0;
   const total = _isRoundTrip ? km * 2 : km;
   const el    = document.getElementById('km-preview');
@@ -112,7 +115,7 @@ window.updateKmPreview = () => {
   el.textContent = total > 0
     ? `Total: ${total.toLocaleString('is-IS', { maximumFractionDigits: 1 })} km${_isRoundTrip ? ' (round trip)' : ''}`
     : '';
-};
+}
 
 async function saveKmEntry() {
   const clientId = document.getElementById('km-client')?.value;
@@ -154,7 +157,7 @@ async function saveKmEntry() {
   document.getElementById('km-km').value    = '';
   document.getElementById('km-notes').value = '';
   _isRoundTrip = false;
-  window.updateKmPreview();
+  updateKmPreview();
   const btn2 = document.getElementById('km-roundtrip-btn');
   if (btn2) { btn2.style.background = ''; btn2.style.color = ''; btn2.style.border = ''; }
 
@@ -162,11 +165,11 @@ async function saveKmEntry() {
 }
 
 // ── History ────────────────────────────────────────────────
-window.switchKmView = (view) => {
+function switchView(view) {
   _view = view;
   if (view === 'history') renderHistory();
   else renderLog();
-};
+}
 
 async function renderHistory() {
   _container.innerHTML = loadingHTML();
@@ -182,8 +185,9 @@ async function renderHistory() {
 
   if (!_entries.length) {
     _container.innerHTML = `
-      <button class="btn btn-ghost" style="margin-bottom:1rem" onclick="window.switchKmView('log')">← Log</button>
+      <button class="btn btn-ghost" style="margin-bottom:1rem" id="km-back-to-log-btn">← Log</button>
       <div class="empty"><div class="empty-icon">🚗</div>No km entries yet.</div>`;
+    document.getElementById('km-back-to-log-btn')?.addEventListener('click', () => switchView('log'));
     return;
   }
 
@@ -206,7 +210,7 @@ async function renderHistory() {
     return entries.length > 0 && entries.every(e => e.invoice_id);
   });
 
-  let html = `<button class="btn btn-ghost" style="margin-bottom:1rem" onclick="window.switchKmView('log')">← Log</button>`;
+  let html = `<button class="btn btn-ghost" style="margin-bottom:1rem" id="km-back-to-log-btn">← Log</button>`;
 
   if (uninvoiced.length) {
     html += `<div class="section-label" style="margin-bottom:0.75rem">Uninvoiced</div>`;
@@ -235,6 +239,8 @@ async function renderHistory() {
   _container.querySelectorAll('.km-delete').forEach(btn => {
     btn.addEventListener('click', e => { e.stopPropagation(); deleteKmEntry(btn.dataset.id); });
   });
+
+  document.getElementById('km-back-to-log-btn')?.addEventListener('click', () => switchView('log'));
 }
 
 function renderCycle(cycle, byDate, isInvoiced, key) {
