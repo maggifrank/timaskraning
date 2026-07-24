@@ -14,6 +14,8 @@ Mobile-first time and kilometre logging app for tracking billable hours and driv
 - History grouped by payment cycle with collapsible **Hours** and **Kilometres** subsections per cycle
 - Uninvoiced and invoiced cycles shown separately
 - Remembers your last used client across sessions (localStorage)
+- Log form draft (client, description, date, time) survives switching tabs — nothing is lost until you actually save
+- Optional "Keep description & time for next entry" checkbox on the log form, for logging the same task across several days without retyping — only the date needs to change between saves
 - Configurable payment cycle start day (default: 21st of month)
 - Configurable default km rate in settings
 - Multi-user with full data isolation via Supabase RLS
