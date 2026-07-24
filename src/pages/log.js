@@ -47,7 +47,28 @@ function setTimeValue(prefix, value) {
   document.getElementById(`${prefix}-m`).value = MINS.includes(mRounded) ? mRounded : '00';
 }
 
-const LAST_CLIENT_KEY = 'timelog_last_client';
+const LAST_CLIENT_KEY  = 'timelog_last_client';
+const DRAFT_KEY        = 'timelog_draft';
+const KEEP_VALUES_KEY  = 'timelog_keep_values';
+
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY)) ?? {}; }
+  catch { return {}; }
+}
+
+function saveDraft() {
+  localStorage.setItem(DRAFT_KEY, JSON.stringify({
+    clientId: document.getElementById('log-client')?.value ?? '',
+    name:     document.getElementById('log-name')?.value ?? '',
+    date:     document.getElementById('log-date')?.value ?? '',
+    from:     getTimeValue('log-from'),
+    until:    getTimeValue('log-until'),
+  }));
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+}
 
 export async function mount(container) {
   const { data: clients } = await sb
@@ -58,7 +79,8 @@ export async function mount(container) {
     .order('name', { ascending: true });
 
   const hasClients   = clients && clients.length > 0;
-  const lastClientId = localStorage.getItem(LAST_CLIENT_KEY);
+  const draft         = loadDraft();
+  const lastClientId  = draft.clientId || localStorage.getItem(LAST_CLIENT_KEY);
 
   container.innerHTML = `
     <div class="card">
@@ -119,19 +141,37 @@ export async function mount(container) {
         <span class="duration-value" id="log-duration-value">—</span>
       </div>
       <div id="log-midnight" style="height:1.1rem;margin-top:0.4rem;text-align:center"></div>
+      <label style="display:flex;align-items:center;gap:0.5rem;margin-top:0.75rem;font-size:0.8rem;color:var(--text3);cursor:pointer">
+        <input type="checkbox" id="log-keep-values"
+          style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer" />
+        Keep description &amp; time for next entry
+      </label>
     </div>
 
     <button class="btn btn-primary" id="log-save-btn">Save entry</button>
   `;
 
-  document.getElementById('log-date').value = todayISO();
+  document.getElementById('log-date').value = draft.date || todayISO();
+  document.getElementById('log-name').value = draft.name || '';
 
-  // Default minutes to 00
-  document.getElementById('log-from-m').value  = '00';
-  document.getElementById('log-until-m').value = '00';
+  // Default minutes to 00, or restore the drafted time
+  if (draft.from) setTimeValue('log-from', draft.from);
+  else            document.getElementById('log-from-m').value = '00';
+  if (draft.until) setTimeValue('log-until', draft.until);
+  else             document.getElementById('log-until-m').value = '00';
+  updateDuration();
 
   ['log-from-h','log-from-m','log-until-h','log-until-m'].forEach(id => {
-    document.getElementById(id).addEventListener('change', updateDuration);
+    document.getElementById(id).addEventListener('change', () => { updateDuration(); saveDraft(); });
+  });
+
+  document.getElementById('log-client')?.addEventListener('change', saveDraft);
+  document.getElementById('log-name')?.addEventListener('input', saveDraft);
+  document.getElementById('log-date')?.addEventListener('change', saveDraft);
+
+  document.getElementById('log-keep-values').checked = localStorage.getItem(KEEP_VALUES_KEY) === 'true';
+  document.getElementById('log-keep-values').addEventListener('change', e => {
+    localStorage.setItem(KEEP_VALUES_KEY, e.target.checked);
   });
 
   document.getElementById('log-save-btn').addEventListener('click', saveEntry);
@@ -205,6 +245,7 @@ async function quickAddClient() {
   }
 
   localStorage.setItem(LAST_CLIENT_KEY, data.id);
+  saveDraft();
   document.getElementById('log-quick-add-form').style.display = 'none';
   document.getElementById('log-quick-add-name').value = '';
   showToast(`"${name}" added — complete billing details in the invoices app`);
@@ -268,15 +309,24 @@ async function saveEntry() {
 
   showToast('Entry saved');
   localStorage.setItem(LAST_CLIENT_KEY, clientId);
-  document.getElementById('log-client').value  = clientId;
-  document.getElementById('log-name').value    = '';
-  document.getElementById('log-from-h').value  = '';
-  document.getElementById('log-from-m').value  = '00';
-  document.getElementById('log-until-h').value = '';
-  document.getElementById('log-until-m').value = '00';
-  document.getElementById('log-duration-value').textContent = '—';
-  document.getElementById('log-midnight').innerHTML = '';
-  document.getElementById('log-name').focus();
+  document.getElementById('log-client').value = clientId;
+
+  const keepValues = document.getElementById('log-keep-values').checked;
+  if (keepValues) {
+    // Leave description/time as-is — only the date needs to change for the next entry
+    saveDraft();
+    document.getElementById('log-date').focus();
+  } else {
+    clearDraft();
+    document.getElementById('log-name').value    = '';
+    document.getElementById('log-from-h').value  = '';
+    document.getElementById('log-from-m').value  = '00';
+    document.getElementById('log-until-h').value = '';
+    document.getElementById('log-until-m').value = '00';
+    document.getElementById('log-duration-value').textContent = '—';
+    document.getElementById('log-midnight').innerHTML = '';
+    document.getElementById('log-name').focus();
+  }
 }
 
 function shake(id) {
