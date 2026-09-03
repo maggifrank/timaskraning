@@ -9,6 +9,7 @@ import {
   isoDate, escHtml, bucketIntoCycles, cyclePeriodLabel,
   isCurrentCycle, formatDateLabel, formatMonthDay,
 } from '../utils.js';
+import { LAST_CLIENT_KEY } from '../storage.js';
 
 let _profile      = {};
 let _clients      = [];
@@ -33,7 +34,7 @@ export async function mount(container, profile) {
 
 // ── Log form ───────────────────────────────────────────────
 function renderLog() {
-  const lastClient = localStorage.getItem('timelog_last_client');
+  const lastClient = localStorage.getItem(LAST_CLIENT_KEY);
 
   _container.innerHTML = `
     <div class="card">
@@ -149,7 +150,7 @@ async function saveKmEntry() {
 
   if (error) { showToast('Could not save entry', 'error'); return; }
 
-  if (clientId) localStorage.setItem('timelog_last_client', clientId);
+  if (clientId) localStorage.setItem(LAST_CLIENT_KEY, clientId);
 
   // Reset form fields
   document.getElementById('km-from').value  = '';

@@ -9,6 +9,7 @@ import {
   calcMinutes, formatDuration,
   todayISO, escHtml,
 } from '../utils.js';
+import { LAST_CLIENT_KEY, DRAFT_KEY, KEEP_VALUES_KEY } from '../storage.js';
 
 // Build hour options 00–23
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
@@ -47,13 +48,25 @@ function setTimeValue(prefix, value) {
   document.getElementById(`${prefix}-m`).value = MINS.includes(mRounded) ? mRounded : '00';
 }
 
-const LAST_CLIENT_KEY  = 'timelog_last_client';
-const DRAFT_KEY        = 'timelog_draft';
-const KEEP_VALUES_KEY  = 'timelog_keep_values';
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const ISO  = /^\d{4}-\d{2}-\d{2}$/;
 
+// localStorage is user-writable — hand back only strings in the expected shape
 function loadDraft() {
-  try { return JSON.parse(localStorage.getItem(DRAFT_KEY)) ?? {}; }
+  let raw;
+  try { raw = JSON.parse(localStorage.getItem(DRAFT_KEY)); }
   catch { return {}; }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+
+  const str  = v => (typeof v === 'string' ? v : '');
+  const time = v => (HHMM.test(str(v)) ? v : '');
+  return {
+    clientId: str(raw.clientId),
+    name:     str(raw.name),
+    date:     ISO.test(str(raw.date)) ? raw.date : '',
+    from:     time(raw.from),
+    until:    time(raw.until),
+  };
 }
 
 function saveDraft() {

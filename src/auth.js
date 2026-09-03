@@ -4,6 +4,7 @@
 import { sb, ENV } from './supabase.js';
 import { showToast } from './components/toast.js';
 import { setLoading } from './components/spinner.js';
+import { clearUserLocalState } from './storage.js';
 
 export let currentUser = null;
 
@@ -17,6 +18,10 @@ export async function initAuth(onSignedIn, onSignedOut) {
   // Handle via auth state change so we catch both hash and PKCE flows
   sb.auth.onAuthStateChange((_event, session) => {
     currentUser = session?.user ?? null;
+
+    // Drop the signed-in user's local draft on every sign-out path —
+    // explicit sign-out, post-password-reset, expiry, or another tab.
+    if (_event === 'SIGNED_OUT') clearUserLocalState();
 
     // Show password form for recovery and invite events
     if (_event === 'PASSWORD_RECOVERY' || (_event === 'USER_UPDATED' && type === 'recovery')) {
